@@ -70,7 +70,14 @@ def gap_function(t,start_window,end_window,lobe_length, gap_flag):
 
 
 def ts_waveform(params):
-    
+    """time series waveform including gaps
+
+    Args:
+        params (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     waveform_prop = h(params[0],t)
     waveform_prop_pad = zero_pad(waveform_prop)
     waveform_prop_gap = gap_window * waveform_prop_pad
@@ -78,25 +85,40 @@ def ts_waveform(params):
     return waveform_prop_gap
 
 
-def lprior(params):
+def log_prior(params):
+    """compute log prior (non normalised)
+
+    Args:
+        params (_type_): _description_
+
+    Returns:
+        _type_: _description_
+    """
     if params[0] < a_low or params[0] > a_high:
-        log_prior = -np.inf
+        log_prior_val = -np.inf
     else:
-        log_prior = 0
-    return log_prior
-def lpost(params):
+        log_prior_val = 0
+    return log_prior_val
+
+def log_post(params):
     '''
     Compute log posterior
     '''
-    if np.isinf(lprior(params)):
+    lprior = log_prior(params)
+    if np.isinf(lprior):
         return -np.inf  # Don't even bother calculating the likelihood if we fall out of the prior range. No support. 
     else:
-        return(lprior(params) + llike(params))
-def llike(params):
-    
-    ts_waveform(params)
+        return(lprior + log_likelihood(params))
 
-    waveform_prop_gap_fft = FFT(waveform_prop_gap)
+def log_likelihood(params):
+    """compute the log likelihood
+
+    Args:
+        params (_type_): _description_
+    """
+    waveform = ts_waveform(params)
+
+    waveform_prop_gap_fft = FFT(waveform)
 
     diff_f_gap = data_f_gap - waveform_prop_gap_fft
     return(-0.5*np.real(diff_f_gap.conj() @ Cov_Matrix_gap_inv @ diff_f_gap))
